@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,6 +14,8 @@ import (
 )
 
 var (
+	addr = flag.String("addr", ":8083", "addr to bind attacker to")
+
 	hostsMutex sync.RWMutex
 	hosts      = []string{}
 
@@ -155,7 +158,7 @@ func main() {
 		}
 	})
 
-	err := http.ListenAndServe(":8083", nil)
+	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

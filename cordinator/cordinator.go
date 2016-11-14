@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -12,6 +13,8 @@ import (
 )
 
 var (
+	addr = flag.String("addr", ":9000", "addr to bind attacker to")
+
 	attackerLock sync.RWMutex
 	attackers    = []string{}
 
@@ -275,7 +278,7 @@ func main() {
 
 	})
 
-	http.ListenAndServe(":9000", nil)
+	http.ListenAndServe(*addr, nil)
 }
 
 func newTrue() *bool {
