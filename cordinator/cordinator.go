@@ -211,8 +211,15 @@ func main() {
 
 		client := http.DefaultClient
 
+		defer r.Body.Close()
+		byt, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			panic(err)
+		}
+
 		for _, attacker := range getAttackers() {
-			resp, err := client.Post(fmt.Sprintf("%v/start", attacker), "application/json", bytes.NewBuffer([]byte{}))
+			resp, err := client.Post(fmt.Sprintf("%v/start", attacker), "application/json", bytes.NewBuffer(byt))
 			if err != nil {
 				log.Println(err)
 				continue

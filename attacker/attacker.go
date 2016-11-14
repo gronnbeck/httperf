@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"sync"
@@ -61,6 +62,8 @@ func main() {
 			return
 		}
 
+		defer r.Body.Close()
+
 		startLock.Lock()
 		if started {
 			w.WriteHeader(400)
@@ -73,13 +76,33 @@ func main() {
 		started = true
 		startLock.Unlock()
 
-		go func() {
+		byt, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			panic(err)
+		}
+
+		type target struct {
+			Method string `json:"method"`
+			URL    string `json:"url"`
+			// Body   string `json:"body"`
+		}
+
+		var payload target
+
+		err = json.Unmarshal(byt, &payload)
+
+		if err != nil {
+			panic(err)
+		}
+
+		go func(t target) {
 			for {
 				rate := uint64(100) // per second
 				duration := 2 * time.Second
 				targeter := vegeta.NewStaticTargeter(vegeta.Target{
-					Method: "GET",
-					URL:    "http://localhost:8080/",
+					Method: payload.Method,
+					URL:    payload.URL,
 				})
 				attacker := vegeta.NewAttacker()
 
@@ -93,7 +116,7 @@ func main() {
 				metrics = m
 				lock.Unlock()
 			}
-		}()
+		}(payload)
 
 		w.Write([]byte(
 			`{"status": { "running": true } }`))
