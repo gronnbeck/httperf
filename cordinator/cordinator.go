@@ -231,6 +231,18 @@ func main() {
 		}
 	})
 
+	http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
+		client := http.DefaultClient
+		for _, attacker := range getAttackers() {
+			resp, err := client.Post(fmt.Sprintf("%v/stop", attacker), "application/json", bytes.NewBuffer([]byte{}))
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			resp.Body.Close()
+		}
+	})
+
 	http.HandleFunc("/aggregator", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "POST" {
 			w.WriteHeader(400)

@@ -85,8 +85,6 @@ func main() {
 			return
 		}
 
-		SetStarted(true)
-
 		byt, err := ioutil.ReadAll(r.Body)
 
 		if err != nil {
@@ -108,9 +106,12 @@ func main() {
 		}
 
 		go func(t target, stop chan bool) {
+			log.Println("Started attack")
 			for {
 				select {
 				case <-stop:
+					SetStarted(false)
+					log.Println("Stopped attack")
 					return
 				default:
 					rate := uint64(100) // per second
@@ -133,6 +134,8 @@ func main() {
 				}
 			}
 		}(payload, stopChan)
+
+		SetStarted(true)
 
 		w.Write([]byte(
 			`{"status": { "running": true } }`))
