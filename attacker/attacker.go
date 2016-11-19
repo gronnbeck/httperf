@@ -21,10 +21,25 @@ var (
 
 	startLock sync.RWMutex
 	started   = false
+
+	stopChan = make(chan bool)
 )
 
 func init() {
 	flag.Parse()
+}
+
+func HasStarted() bool {
+	startLock.RLock()
+	s := started
+	startLock.RUnlock()
+	return s
+}
+
+func SetStarted(s bool) {
+	startLock.Lock()
+	started = s
+	startLock.Unlock()
 }
 
 func main() {
@@ -47,9 +62,7 @@ func main() {
 	})
 
 	http.HandleFunc("/status", func(w http.ResponseWriter, r *http.Request) {
-		startLock.RLock()
-		status := started
-		startLock.RUnlock()
+		status := HasStarted()
 
 		p := fmt.Sprintf(`{"active": %v}`, status)
 		w.Write([]byte(p))
@@ -64,17 +77,15 @@ func main() {
 
 		defer r.Body.Close()
 
-		startLock.Lock()
-		if started {
+		if HasStarted() {
 			w.WriteHeader(400)
 			w.Write([]byte(
 				`{"error": { "msg": "performance tests already running" } }`))
 
-			startLock.Unlock()
 			return
 		}
-		started = true
-		startLock.Unlock()
+
+		SetStarted(true)
 
 		byt, err := ioutil.ReadAll(r.Body)
 
@@ -96,30 +107,46 @@ func main() {
 			panic(err)
 		}
 
-		go func(t target) {
+		go func(t target, stop chan bool) {
 			for {
-				rate := uint64(100) // per second
-				duration := 2 * time.Second
-				targeter := vegeta.NewStaticTargeter(vegeta.Target{
-					Method: payload.Method,
-					URL:    payload.URL,
-				})
-				attacker := vegeta.NewAttacker()
+				select {
+				case <-stop:
+					return
+				default:
+					rate := uint64(100) // per second
+					duration := 2 * time.Second
+					targeter := vegeta.NewStaticTargeter(vegeta.Target{
+						Method: payload.Method,
+						URL:    payload.URL,
+					})
+					attacker := vegeta.NewAttacker()
 
-				var m vegeta.Metrics
-				for res := range attacker.Attack(targeter, rate, duration) {
-					m.Add(res)
+					var m vegeta.Metrics
+					for res := range attacker.Attack(targeter, rate, duration) {
+						m.Add(res)
+					}
+					m.Close()
+
+					lock.Lock()
+					metrics = m
+					lock.Unlock()
 				}
-				m.Close()
-
-				lock.Lock()
-				metrics = m
-				lock.Unlock()
 			}
-		}(payload)
+		}(payload, stopChan)
 
 		w.Write([]byte(
 			`{"status": { "running": true } }`))
+	})
+
+	http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
+		if HasStarted() {
+			stopChan <- true
+			w.WriteHeader(202)
+			w.Write([]byte(`{"status": { "running": false } }`))
+			return
+		}
+		w.WriteHeader(400)
+		w.Write([]byte(`{"status": { "running": false } }`))
 	})
 
 	err := http.ListenAndServe(*addr, nil)
