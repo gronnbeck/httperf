@@ -1,12 +1,75 @@
 const request = superagent
-const aggregatorUrl = "http://localhost:8083"
 
-const fetchMetrics = (results) => {
-  request.
-    get(aggregatorUrl).
-    end((err, res) => {
-      results(res, err)
+fetch = (fetchMetrics) => () =>
+  fetchMetrics((res, err) => {
+  if (err != null) {
+    console.log(err)
+    return
+  }
+  if (res.body == null) {
+    return
+  }
+  const s = calculateMetrics(state, res.body)
+  window.requestAnimationFrame(() => {
+    document.getElementById("95th").innerText=s["95th"]
+    document.getElementById("requests").innerText=s["requests"]
+    document.getElementById("success").innerText=s["success"]
+    document.getElementById("errors").innerText=s["errors"]
+  })
+  console.log(res.body)
+})
+
+var aggregatorInterval;
+document.getElementById("set-aggregator").onclick = () => {
+  if (aggregatorInterval != null) {
+    clearInterval(aggregatorInterval)
+  }
+  var aggregatorUrl = document.getElementById("aggregator-url").value
+  if (aggregatorInterval == "") {
+    return
+  }
+  const fetchMetrics = (results) => {
+    request.
+      get(aggregatorUrl).
+      end((err, res) => {
+        results(res, err)
+      })
+  }
+  aggregatorInterval = setInterval(fetch(fetchMetrics), 1000)
+}
+
+var coordinatorUrl = ""
+document.getElementById("set-coordinator").onclick = () => {
+  coordinatorUrl = document.getElementById("coordinator-url").value
+}
+
+const renderAttackerList = (attackers) => {
+    const tmpl = (url) => `<li>${url}</li>`
+    const innerHTML = attackers.map(tmpl).join("")
+    requestAnimationFrame(() => {
+      document.getElementById("list-attackers").innerHTML = innerHTML
     })
+}
+
+var attackers = []
+document.getElementById("add-attacker").onclick = () => {
+  const attackerUrl = document.getElementById("add-attacker-url").value
+  if (attackers.indexOf(attackerUrl) != -1) {
+    console.log("Attacker is already added")
+    return
+  }
+
+  attackers.push(attackerUrl)
+
+  renderAttackerList(attackers)
+}
+
+document.getElementById("start").onclick = () => {
+  console.log("start")
+}
+
+document.getElementById("stop").onclick = () => {
+  console.log("stop")
 }
 
 const state = {
@@ -54,20 +117,3 @@ const calculateMetrics = (state, metrics) => {
 
   return state
 }
-
-
-fetch = () => fetchMetrics((res, err) => {
-  if (res.body == null) {
-    return
-  }
-  const s = calculateMetrics(state, res.body)
-  window.requestAnimationFrame(() => {
-    document.getElementById("95th").innerText=s["95th"]
-    document.getElementById("requests").innerText=s["requests"]
-    document.getElementById("success").innerText=s["success"]
-    document.getElementById("errors").innerText=s["errors"]
-  })
-  console.log(res.body)
-})
-
-setInterval(fetch, 1000)

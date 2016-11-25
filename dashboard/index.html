@@ -7,6 +7,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.4.0/Chart.bundle.js"></script>
   </head>
   <body>
+    <div>
+      <input type="text" id="aggregator-url" placeholder="aggregator url"/>
+      <button id="set-aggregator">Set</button>
+    </div>
+    <div>
+      <input type="text" id="coordinator-url" placeholder="coordinator url"/>
+      <button id="set-coordinator">Set</button>
+    </div>
+    <div>
+      <input type="text" id="add-attacker-url" placeholder="attacker"/>
+      <button id="add-attacker">Add</button>
+      <ul id="list-attackers">
+      </ul>
+    </div>
+    <div>
+      <input type="text" placeholder="attack url"/>
+      <button id="start">Start</button>
+      <button id="stop">Stop</button>
+    </div>
     <div id="95th"></div>
     <div id="requests"></div>
     <div id="success"></div>
