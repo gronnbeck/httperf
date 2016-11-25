@@ -290,6 +290,7 @@ func main() {
 
 	})
 
+	log.Printf("Coordinator is running at %v\n", *addr)
 	http.ListenAndServe(*addr, nil)
 }
 

@@ -158,6 +158,7 @@ func main() {
 		}
 	})
 
+	log.Printf("Aggreagor is running at %v\n", *addr)
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal(err)

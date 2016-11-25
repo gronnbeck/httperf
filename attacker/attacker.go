@@ -152,6 +152,7 @@ func main() {
 		w.Write([]byte(`{"status": { "running": false } }`))
 	})
 
+	log.Printf("Attacker is running at %v\n", *addr)
 	err := http.ListenAndServe(*addr, nil)
 	if err != nil {
 		log.Fatal(err)
